@@ -23,7 +23,7 @@
 start:										; game begins
 											; initial game setup
 .equ seq_counter = 3						; variable to count the number of steps in the sequence, initially set to 3
-.equ sequence = 0x03						; giving an adress for the sequence in the ram (0x200)
+.equ sequence = 0x03						; giving an adress for the sequence in r3 (should be in ram (0x200))
 .equ seq_value = 1							; setting the value that will go into the sequence (this should be random later on)
 
 	ldi r18, seq_counter					; the sequence counter loaded into r18
@@ -39,10 +39,8 @@ start:										; game begins
 
 	ldi r17, 0								; load the counter for the loop into r17								
 	ldi r16, seq_value						; load the sequence value into r16
-	ldi r20, sequence						; load the initial adress from where the sequence starts into r20
 seq_loading:
-	sts sequence, r16						; store one sequence value 
-	inc r20									; increment the address to store the next sequence value (does not work!!!!!!!)
+	sts sequence + 1, r16					; store one sequence value (+1 works! How to add the content of r17 (counter)????????
 	inc r16									; give new value to the variable value (this should be random later on)
 	inc r17									; increment loop counter
 	cp r17, r18								; compare loop counter with seq counter
