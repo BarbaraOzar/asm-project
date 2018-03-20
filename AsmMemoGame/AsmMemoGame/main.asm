@@ -32,10 +32,10 @@ start:									; game begins
 
 		; loop to load the initial 3 values in sequence
 		; for (int i = 0; i < seqCounter; i++) {
-		;	sequence[i] = ranGen.nextInt(9);
-		;}
-	ldi r17, 0							; load the counter for the loop into r17								
+		;	sequence[i] = ranGen.nextInt(9)
+		;}							
 	ldi r18, seq_value					; load the sequence value into r18
+	ldi r17, 0							; load the counter for the loop into r17	
 seq_loading:
 	st x+, r18							; store one sequence value into RAM 
 	inc r18								; give new value to the variable value (this should be random later on)
@@ -46,9 +46,28 @@ seq_loading:
 		; welcome sequence
 
 		; while the game is on
+	ldi r19, 1							; load an indicator that the game is still on (1 = on, 0 = off)
 nextLevel:
-		; play sequence
 
+		; play sequence
+	ldi xh, high(sequence)				; loading the high part of sequence into X pointer
+	ldi xl, low(sequence)				; loading the low part of sequence into X pointer
+	ldi r17, 0							; load the counter for the loop into r17
+seq_display:
+	ld r20, x+							; transfer one part of sequence into r20
+	out porta, r20						; output value of r20 to led
+
+	clr r21
+	push r21							; place for return value in the stack
+	ldi r21, 100
+	push r21							; push parameter 1 to the stack (parameter = 100)
+	call delay							; call subroutine delay with parameter 100
+	pop r21
+	pop r21								; no return value for delay subroutine
+
+	inc r17								; increment loop counter
+	cp r17, r16							; compare loop counter with seq counter
+	brlo seq_display					; jump to seq_display if loop counter < seq counter
 		; wait for user input
 
 		; compare input with sequence
@@ -64,28 +83,32 @@ nextLevel:
 
 
 delay:									; creating a subroutine delay to be called when needed
-	push r29							; push the value in r29 to the stack
-	push r30							; push the value in r30 to the stack
-	push r31							; push the value in r31 to the stack
+	push r23							; push the value in r23 to the stack
+	push r24							; push the value in r24 to the stack
+	push r25							; push the value in r25 to the stack
 
-	ldi r29, 25							; load counter for loop1 into r29
+	in zh, sph						
+	in zl, spl							; copy stack pointer value into z pointer
+	adiw zl, 3+3+1						; increment the z pointer up until parameter 1
+
+	ld r23, z+							; load counter for loop1 into r23 form parameter
 loop1:
-	ldi r30, 255						; load counter for loop2 into r30
+	ldi r24, 255						; load counter for loop2 into r24 = 255
 loop2:
-	ldi r31, 255						; load counter for loop3 into r31
+	ldi r25, 255						; load counter for loop3 into r25 = 255
 loop3:
-	dec r31								; decrement counter for loop3
-	brne loop3							; jump to loop3 label if r31 != 0
-	dec r30								; decrement counter for loop2
-	brne loop2							; jump to loop2 label if r30 != 0
-	dec r29								; decrement counter for loop1
-	brne loop1							; jump to loop1 label if r29 != 0
+	dec r25								; decrement counter for loop3
+	brne loop3							; jump to loop3 label if r25 != 0
+	dec r24								; decrement counter for loop2
+	brne loop2							; jump to loop2 label if r24 != 0
+	dec r23								; decrement counter for loop1
+	brne loop1							; jump to loop1 label if r23 != 0
 
-	pop r31								; pop the value of r31 from the stack
-	pop r30								; pop the value of r30 from the stack
-	pop r29								; pop the value of r29 from the stack
+	pop r25								; pop the value of r31 from the stack
+	pop r24								; pop the value of r30 from the stack
+	pop r23								; pop the value of r29 from the stack
 
-	ret
+	ret									; end of delay subroutine
 
 
 
