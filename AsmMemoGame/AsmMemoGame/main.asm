@@ -98,11 +98,7 @@ seq_display:
 	inc r17								; increment loop counter
 	cp r17, r16							; compare loop counter with seq counter
 	brlo seq_display					; jump to seq_display if loop counter < seq counter
-<<<<<<< HEAD
 
-=======
-		
->>>>>>> master
 		; wait for user input
 
 		; compare input with sequence
