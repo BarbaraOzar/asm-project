@@ -68,6 +68,7 @@ seq_display:
 	inc r17								; increment loop counter
 	cp r17, r16							; compare loop counter with seq counter
 	brlo seq_display					; jump to seq_display if loop counter < seq counter
+
 		; wait for user input
 
 		; compare input with sequence
@@ -104,9 +105,9 @@ loop3:
 	dec r23								; decrement counter for loop1
 	brne loop1							; jump to loop1 label if r23 != 0
 
-	pop r25								; pop the value of r31 from the stack
-	pop r24								; pop the value of r30 from the stack
-	pop r23								; pop the value of r29 from the stack
+	pop r25								; pop the value of r25 from the stack
+	pop r24								; pop the value of r24 from the stack
+	pop r23								; pop the value of r23 from the stack
 
 	ret									; end of delay subroutine
 
