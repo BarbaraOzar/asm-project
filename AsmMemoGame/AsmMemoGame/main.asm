@@ -4,8 +4,8 @@
 ; Created: 3/16/2018 8:30:36 AM
 
 
-
-; configuration of stack
+	; configurations
+	; configuration of stack
 	ldi r16, high(ramend)				
 	out sph, r16						; loading the high end of stack pointer with 0x21
 	ldi r16, low(ramend)
@@ -17,9 +17,8 @@
 	out porta, r16						; turn off all leds
 	 
 	; configuration of portB for input
-	ldi r16, 0x0						; seting value 0b1111_1111 into register 16
-	out ddrb, r16						; setting all the bits in port a to be an output
-	out portb, r16						; turn off all leds
+	ldi r16, 0x00						; seting value 0b0000_0000 into register 16
+	out ddrb, r16						; setting all the bits in port a to be an input
 
 	;WELCOME SEQUENCE	
 	ldi r19, 8							; loop counter for all 7 LEDs
@@ -112,52 +111,94 @@ seq_display:
 
 	jmp start							; game is restarted
 
+	; delay subroutine
+	; parameter:
+	;	number of outer loops between 1 and 255
+delay:									
+	push	r23							; push the value of r23 to the stack
+	push	r24							; push the value of r24 to the stack
+	push	r25							; push the value of r25 to the stack
+	push	r30
+	push	r31							; push the value of z pointer to the stack
 
-delay:									; creating a subroutine delay to be called when needed
-	push r23							; push the value in r23 to the stack
-	push r24							; push the value in r24 to the stack
-	push r25							; push the value in r25 to the stack
+	in		zh, sph						
+	in		zl, spl						; copy stack pointer value into z pointer
+	adiw	zl, 5+3+1					; increment the z pointer up until parameter 1
 
-	in zh, sph						
-	in zl, spl							; copy stack pointer value into z pointer
-	adiw zl, 3+3+1						; increment the z pointer up until parameter 1
-
-	ld r23, z+							; load counter for loop1 into r23 form parameter
+	ld		r23, z+						; load counter for loop1 into r23 form parameter
 loop1:
-	ldi r24, 255						; load counter for loop2 into r24 = 255
+	ldi		r24, 255					; load counter for loop2 into r24 = 255
 loop2:
-	ldi r25, 255						; load counter for loop3 into r25 = 255
+	ldi		r25, 255					; load counter for loop3 into r25 = 255
 loop3:
-	dec r25								; decrement counter for loop3
-	brne loop3							; jump to loop3 label if r25 != 0
-	dec r24								; decrement counter for loop2
-	brne loop2							; jump to loop2 label if r24 != 0
-	dec r23								; decrement counter for loop1
-	brne loop1							; jump to loop1 label if r23 != 0
+	dec		r25							; decrement counter for loop3
+	brne	loop3						; jump to loop3 label if r25 != 0
+	dec		r24							; decrement counter for loop2
+	brne	loop2						; jump to loop2 label if r24 != 0
+	dec		r23							; decrement counter for loop1
+	brne	loop1						; jump to loop1 label if r23 != 0
 
-	pop r25								; pop the value of r25 from the stack
-	pop r24								; pop the value of r24 from the stack
-	pop r23								; pop the value of r23 from the stack
-
+	pop		r31							; pop the value of z pointer from the stack
+	pop		r30
+	pop		r25							; pop the value of r25 from the stack
+	pop		r24							; pop the value of r24 from the stack
+	pop		r23							; pop the value of r23 from the stack
+	
 	ret									; end of delay subroutine
 
-
-
-;SMALL DELAY IN BETWEEN LEDs LIGHTNING:
-small_delay:							; creating a method delay to be called when needed
-	ldi r21, 10							; load counter for loop1 into r29 // values should be incresed by *10
-loopsmall1:
-	ldi r22, 255						; load counter for loop2 into r30  // values should be incresed by *10
-loopsmall2:
-	ldi r23, 255						; load counter for loop2 into r30  // values should be incresed by *10
-loopsmall3:
-	dec r23
-	brne loopsmall3
-	dec r22
-	brne loopsmall2
-	dec r21
-	brne loopsmall1
+	; turn off all the lights
+lights_all_off:
+	push	r16					
+	ldi		r16, 0x00			; set all 0 in the r16
+	com		r16					; invert the pattern
+	out		porta r16			; send it to port 16
+	pop		r16
 	ret
+		 
+	; turn on all the light
+lights_all_on:
+	push	r16				
+	ldi		r16, 0xff			; set all 1 in the r16
+	com		r16					; invert the pattern
+	out		porta r16			; send it to port 16
+	pop		r16
+	ret
+
+	; turn on one individual light
+	; param: 
+	;	lights on between 0-7
+light_on
+	push	r16
+	push	r17
+	push	r18
+	push	r30
+	push	r31
+	
+	in		zh, sph						
+	in		zl, spl				; copy stack pointer value into z pointer
+	adiw	zl, 4+3+1			; increment the z pointer up until parameter 1
+		
+	in		r17, porta			; read the input we have sent to port a
+	ld		r16, z+				; load the parameter from the stack into r16
+	ldi		r18, 1				; store 1 in r18
+loop:
+	tst		r16					; test if r16 = 0
+	breq	shift_end			; break the loop if r16 = 0
+	lsl		r18					; lsl - logic shift left
+	dec		r16					; decrement the value 
+	rjmp	loop				; jump to loop
+shift_end:
+	or		r17, r18			; 'or' current state of the lights with the value in r18
+	com		r17					; invert the pattern before out
+	out		porta, r17			; send the new pattern into porta
+
+	pop		r31
+	pop		r30
+	pop		r18
+	pop		r17
+	pop		r16
+	ret
+
 
 
 ;Check portB for input
@@ -167,6 +208,9 @@ wait_for_input:
 	inc r25								; it increments only once?!
 	rjmp wait_for_input
 	
+
+
+
 ; GENERATE A (pseudo)RANDOM NO
 	load_generator:	
 	mov r25, r21						; copy randomNo to r21
