@@ -58,55 +58,54 @@ start:									; game begins
 	ldi r16, seq_counter				; the sequence counter loaded into r16
 		
 
-		; loop to load the initial 3 values in sequence
-		; for (int i = 0; i < seqCounter; i++) {
-		;	sequence[i] = ranGen.nextInt(9)
-		;}	
+	; loop to load the initial 3 values in sequence
+	; for (int i = 0; i < seqCounter; i++) {
+	;	sequence[i] = ranGen.nextInt(9)
+	;}	
 								
-	ldi r18, seq_value					; load the sequence value into r18
-	ldi r17, 0							; load the counter for the loop into r17	
+	ldi r18, seq_value				; load the sequence value into r18
+	ldi r17, 0						; load the counter for the loop into r17	
 seq_loading:
-	st x+, r18							; store one sequence value into RAM 
-	inc r18								; give new value to the variable value (this should be random later on)
-	inc r17								; increment loop counter
+	st x+, r18						; store one sequence value into RAM 
+	inc r18							; give new value to the variable value (this should be random later on)
+	inc r17							; increment loop counter
 
-	cp r17, r16							; compare loop counter with seq counter
-	brlo seq_loading					; jump to seq_loading if loop counter < seq counter
+	cp r17, r16						; compare loop counter with seq counter
+	brlo seq_loading				; jump to seq_loading if loop counter < seq counter
 
 
 	; while the game is on
-	ldi r19, 1							; load an indicator that the game is still on (1 = on, 0 = off)
+	ldi r19, 1						; load an indicator that the game is still on (1 = on, 0 = off)
 nextLevel:
 
 	; play sequence
-	ldi xh, high(sequence)				; loading the high part of sequence into X pointer
-	ldi xl, low(sequence)				; loading the low part of sequence into X pointer
-	ldi r17, 0							; load the counter for the loop into r17
+	ldi		xh, high(sequence)		; loading the high part of sequence into X pointer
+	ldi		xl, low(sequence)		; loading the low part of sequence into X pointer
+	ldi		r17, 0					; load the counter for the loop into r17
 seq_display:
-	ld r20, x+							; transfer one part of sequence into r20
-	out porta, r20						; output value of r20 to led
+	ld		r20, x+					; transfer one part of sequence into r20
+	push	r20						; load r20 on the stack as a variable to light_on subroutine (which led to light)
+	call	light_on				; call light_on routine
+	pop		r20						; 
 
-	clr r21
-	push r21							; place for return value in the stack
-	ldi r21, 100
-	push r21							; push parameter 1 to the stack (parameter = 100)
-	call delay							; call subroutine delay with parameter 100
-	pop r21
-	pop r21								; no return value for delay subroutine
+	ldi		r21, 100		
+	push	r21						; push parameter 1 to the stack (parameter = 100)
+	call	delay					; call subroutine delay with parameter 100
+	pop		r21
 
-	inc r17								; increment loop counter
-	cp r17, r16							; compare loop counter with seq counter
-	brlo seq_display					; jump to seq_display if loop counter < seq counter
+	inc		r17						; increment loop counter
+	cp		r17, r16				; compare loop counter with seq counter
+	brlo	seq_display				; jump to seq_display if loop counter < seq counter
 
-		; wait for user input
+	; wait for user input
 
-		; compare input with sequence
+	; compare input with sequence
 
-		; if wrong input => game over, error sequence
+	; if wrong input => game over, error sequence
 
-		; increment sequence counter
+	; increment sequence counter
 
-		; add one more to sequence
+	; add one more to sequence
 
 
 	jmp start							; game is restarted
@@ -151,7 +150,7 @@ lights_all_off:
 	push	r16					
 	ldi		r16, 0x00			; set all 0 in the r16
 	com		r16					; invert the pattern
-	out		porta r16			; send it to port 16
+	out		porta, r16			; send it to port 16
 	pop		r16
 	ret
 		 
