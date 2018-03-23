@@ -84,7 +84,7 @@ nextLevel:
 seq_display:
 	ld		r20, x+					; transfer one part of sequence into r20
 	push	r20						; load r20 on the stack as a variable to light_on subroutine (which led to light)
-	call	light_on				; call light_on routine
+	call	light_on				; call light_on routine with the values stored in the sequence
 	pop		r20						; 
 
 	ldi		r21, 200		
@@ -97,6 +97,15 @@ seq_display:
 	inc		r17						; increment loop counter
 	cp		r17, r16				; compare loop counter with seq counter
 	brlo	seq_display				; jump to seq_display if loop counter < seq counter
+
+	; while (inputCounter < seqCounter) {
+	;	input = UserInput;
+	;	if(input != sequence[inputCounter] {
+	;		error sequence;
+	;		jump to start;
+	;	}
+	;	inputCounter++;
+	; }
 
 	; wait for user input
 
