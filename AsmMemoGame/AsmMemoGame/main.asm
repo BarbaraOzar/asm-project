@@ -20,7 +20,7 @@
 	ldi r16, 0x00						; seting value 0b0000_0000 into register 16
 	out ddrb, r16						; setting all the bits in port a to be an input
 
-	;WELCOME SEQUENCE	
+	/*;WELCOME SEQUENCE	
 	ldi r19, 8							; loop counter for all 7 LEDs
 	ldi r17, 0x00						; value has to be inverted for LEDs on
 	ldi r18, 0x01						; value to add, to light sequentially each LED// the resulted value must be complemented for LED to light
@@ -36,12 +36,11 @@ load_welcome:
 	add r18, r18						; r18 = 01 + 01 = 0000_0010 
 	dec r19								; decrement loop counter
 	
-	call small_delay					; delay before second LED lightning 
 
 	cpi r19, 0x00						; r19 > 0? 
 	brne load_welcome					; if r19-- != 0 , branch to load_welcome
 	
-	rjmp wait_for_input					; check portb for input
+	rjmp wait_for_input					; check portb for input */
 
 
 	
@@ -88,10 +87,12 @@ seq_display:
 	call	light_on				; call light_on routine
 	pop		r20						; 
 
-	ldi		r21, 100		
+	ldi		r21, 200		
 	push	r21						; push parameter 1 to the stack (parameter = 100)
 	call	delay					; call subroutine delay with parameter 100
 	pop		r21
+
+	call	lights_all_off			; switch all lights off
 
 	inc		r17						; increment loop counter
 	cp		r17, r16				; compare loop counter with seq counter
@@ -159,14 +160,14 @@ lights_all_on:
 	push	r16				
 	ldi		r16, 0xff			; set all 1 in the r16
 	com		r16					; invert the pattern
-	out		porta r16			; send it to port 16
+	out		porta, r16			; send it to port 16
 	pop		r16
 	ret
 
 	; turn on one individual light
 	; param: 
 	;	lights on between 0-7
-light_on
+light_on:
 	push	r16
 	push	r17
 	push	r18
@@ -175,9 +176,10 @@ light_on
 	
 	in		zh, sph						
 	in		zl, spl				; copy stack pointer value into z pointer
-	adiw	zl, 4+3+1			; increment the z pointer up until parameter 1
+	adiw	zl, 5+3+1			; increment the z pointer up until parameter 1
 		
 	in		r17, porta			; read the input we have sent to port a
+	com		r17
 	ld		r16, z+				; load the parameter from the stack into r16
 	ldi		r18, 1				; store 1 in r18
 loop:
