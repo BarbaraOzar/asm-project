@@ -50,12 +50,10 @@ start:									; game begins
 .equ seq_counter = 3					; variable to count the number of steps in the sequence, initially set to 3
 .equ seq_value = 1						; setting the value that will go into the sequence (this should be random later on)
 
-.equ sequence = 0x200					; giving an adress for the sequence in RAM (0x200)
+.equ sequence = 0x200					; giving an address for the sequence in RAM (0x200)
 	ldi xh, high(sequence)				; loading the high part of sequence into X pointer
 	ldi xl, low(sequence)				; loading the low part of sequence into X pointer
-
 	ldi r16, seq_counter				; the sequence counter loaded into r16
-		
 
 	; loop to load the initial 3 values in sequence
 	; for (int i = 0; i < seqCounter; i++) {
@@ -71,7 +69,6 @@ seq_loading:
 
 	cp r17, r16						; compare loop counter with seq counter
 	brlo seq_loading				; jump to seq_loading if loop counter < seq counter
-
 
 	; while the game is on
 	ldi r19, 1						; load an indicator that the game is still on (1 = on, 0 = off)
@@ -89,7 +86,7 @@ seq_display:
 
 	ldi		r21, 200		
 	push	r21						; push parameter 1 to the stack (parameter = 100)
-	call	delay					; call subroutine delay with parameter 100
+;	call	delay					; call subroutine delay with parameter 100
 	pop		r21
 
 	call	lights_all_off			; switch all lights off
@@ -98,11 +95,31 @@ seq_display:
 	cp		r17, r16				; compare loop counter with seq counter
 	brlo	seq_display				; jump to seq_display if loop counter < seq counter
 
-	; wait for user input
+	; get user input
+	ldi		xh, high(sequence)		; loading the high part of sequence address into X pointer register
+	ldi		xl, low(sequence)		; loading the low part of sequence address into X pointer register
+	ldi r17, 0						; load the counter for the loop into r17
 
+get_input:
+	in r22, pinb					; read input from port b
+	tst r22							; compare if there is any input
+	breq get_input					; if input = 0 get input again
+	
 	; compare input with sequence
+	ld r23, x+						; transfer one part of sequence into r24
 
-	; if wrong input => game over, error sequence
+; input needs to be readjusted to match the seq
+
+	cp r22, r23						; compare input with sequence
+	brne error						; branch to error if sequences weren't equal
+
+	inc r17							; increment loop counter
+	cp r17, r16						; compare loop counter with seq counter
+	brlo get_input					; branch to get_input if loop counter < seq counter
+
+
+	; error sequence
+error:
 
 	; increment sequence counter
 
@@ -155,7 +172,7 @@ lights_all_off:
 	pop		r16
 	ret
 		 
-	; turn on all the light
+	; turn on all the lights
 lights_all_on:
 	push	r16				
 	ldi		r16, 0xff			; set all 1 in the r16
