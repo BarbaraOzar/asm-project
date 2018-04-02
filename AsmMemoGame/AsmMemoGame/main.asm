@@ -1,4 +1,10 @@
-; configurations
+
+; AsmMemoGame.asm
+;
+; Created: 3/16/2018 8:30:36 AM
+
+
+	; configurations
 	; configuration of stack
 	ldi r16, high(ramend)				
 	out sph, r16						; loading the high end of stack pointer with 0x21
@@ -12,9 +18,9 @@
 	 
 	; configuration of portB for input
 	ldi r16, 0x00						; seting value 0b0000_0000 into register 16
-	out ddrb, r16						; setting all the bits in port b to be an input
-/*
-;WELCOME SEQUENCE	
+	out ddrb, r16						; setting all the bits in port a to be an input
+
+	/*;WELCOME SEQUENCE	
 	ldi r19, 8							; loop counter for all 7 LEDs
 	ldi r17, 0x00						; value has to be inverted for LEDs on
 	ldi r18, 0x01						; value to add, to light sequentially each LED// the resulted value must be complemented for LED to light
@@ -27,7 +33,7 @@ load_welcome:
 	out porta, r20						; value is outputted to porta
 
 	add r18, r18						; r18 = 01 + 01 = 0000_0010 
-	dec r19								; decrement loop counter	
+	dec r19								; decrement loop counter
 
 	cpi r19, 0x00						; r19 > 0? 
 	brne load_welcome					; if r19-- != 0 , branch to load_welcome
@@ -123,6 +129,12 @@ more_times:							; if 4-times-loop is executed
 	; increment sequence counter
 
 	; add one more to sequence
+
+
+	; increment sequence counter
+
+	; add one more to sequence
+
 
 	jmp start							; game is restarted
 
@@ -224,6 +236,9 @@ wait_for_input:
 	inc r25								; it increments only once?!
 	rjmp wait_for_input
 	
+
+
+
 ; GENERATE A (pseudo)RANDOM NO
 	load_generator:	
 	mov r25, r21						; copy randomNo to r21
