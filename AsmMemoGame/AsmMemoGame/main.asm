@@ -111,7 +111,7 @@ get_input:
 	breq get_input					; if input = 0 get input again
 	
 	; compare input with sequence
-	ld r23, x+						; transfer one part of sequence into r24
+	ld r23, x+						; transfer one part of sequence into r23
 
 	dec r22							; input needs to be adjusted to match the seq
 	cp r22, r23						; compare input with sequence
@@ -120,6 +120,32 @@ get_input:
 	inc r17							; increment loop counter
 	cp r17, r16						; compare loop counter with seq counter
 	brlo get_input					; branch to get_input if loop counter < seq counter
+
+
+
+	; error sequence
+error:
+.equ error_counter = 3
+ldi r24, error_counter			; counter to repeat the error loop 3 times
+
+error_loop:
+
+	call lights_all_on
+	
+	ldi		r21, 100		
+	push	r21						; push parameter 1 to the stack (parameter = 100)
+;	call	delay					; call subroutine delay with parameter 100
+	pop		r21
+
+	call lights_all_off
+
+	push	r21						; push parameter 1 to the stack (parameter = 100)
+;	call	delay					; call subroutine delay with parameter 100
+	pop		r21
+
+	dec r24							; decrement counter
+	tst r24							; test if r24 = 0
+	brne error_loop					; branch if r24 is != 0
 
 
 ; ERROR sequence
@@ -138,6 +164,7 @@ more_times:							; if 4-times-loop is executed
 	; increment sequence counter
 
 	; add one more to sequence
+
 
 
 	; increment sequence counter
