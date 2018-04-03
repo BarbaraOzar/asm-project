@@ -19,7 +19,7 @@
 	ldi r16, 0x00						; seting value 0b0000_0000 into register 16
 	out ddrb, r16						; setting all the bits in port a to be an input
 
-	/*;WELCOME SEQUENCE	
+	;WELCOME SEQUENCE	
 	ldi r19, 8							; loop counter for all 7 LEDs
 	ldi r17, 0x00						; value has to be inverted for LEDs on
 	ldi r18, 0x01						; value to add, to light sequentially each LED// the resulted value must be complemented for LED to light
@@ -31,13 +31,18 @@ load_welcome:
 	com r20								; value is inverted for LED0 to light
 	out porta, r20						; value is outputted to porta
 
-	add r18, r18						; r18 = 01 + 01 = 0000_0010 
+;	ldi		r21, 20		
+;	push	r21							; push parameter 1 to the stack (parameter = 80)
+;	call	delay						; call subroutine delay with parameter 80
+;	pop		r21
+
+	lsl r18								; r18 = 01 + 01 = 0000_0010 
 	dec r19								; decrement loop counter
 
 	cpi r19, 0x00						; r19 > 0? 
 	brne load_welcome					; if r19-- != 0 , branch to load_welcome
 	
-	rjmp wait_for_input					; check portb for input */
+	call wait_for_input					; check portb for input
 
 	
 start:									; game begins
@@ -79,8 +84,8 @@ seq_display:
 	pop		r20						; 
 
 	ldi		r21, 80		
-	push	r21						; push parameter 1 to the stack (parameter = 100)
-;	call	delay					; call subroutine delay with parameter 100
+	push	r21						; push parameter 1 to the stack (parameter = 80)
+	call	delay					; call subroutine delay with parameter 80
 	pop		r21
 
 	call	lights_all_off			; switch all lights off
@@ -267,7 +272,7 @@ shift_end:
 
 ;Check portB for input
 wait_for_input:
-	sbic pinb, 0
+	sbic pinb, 0						; skip if bit is set
 	rjmp load_generator	
 	inc r25								; it increments only once?!
 	rjmp wait_for_input
