@@ -87,7 +87,7 @@ seq_display:
 	call	light_on				; call light_on routine with the values stored in the sequence
 	pop		r20						; 
 
-	ldi		r21, 200		
+	ldi		r21, 80		
 	push	r21						; push parameter 1 to the stack (parameter = 100)
 	call	delay					; call subroutine delay with parameter 100
 	pop		r21
