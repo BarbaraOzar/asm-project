@@ -104,9 +104,11 @@ seq_display:
 	ldi		xh, high(sequence)		; loading the high part of sequence address into X pointer register
 	ldi		xl, low(sequence)		; loading the low part of sequence address into X pointer register
 	ldi r17, 0						; load the counter for the loop into r17
+	ldi r24, 0						; use r24 for random number generation (rng) counter
 
 get_input:
 	in r22, pinb					; read input from port b
+	inc r24							; increment rng counter
 	tst r22							; compare if there is any input
 	breq get_input					; if input = 0 get input again
 	
@@ -160,9 +162,20 @@ load_4_times:	tst r16				; test r16 == 0 ?
 more_times:							; if 4-times-loop is executed
 	pop r16							; pop r16 to return to initial value
 	
-	; increment sequence counter
+	; add one more to sequence - generation of a new sequence number; increment sequence counter
 
-	; add one more to sequence
+get_random:
+	push r16						; r16 used to store upper bound = 8
+	ldi r16, 8						; load upper bound to r16
+
+modulo:
+	lsr r24							; logical shift right - divides number by two
+	cp r24, r16
+	brsh modulo
+	
+	st x+, r24						; store new sequence value into RAM 
+	inc r17							; increment loop counter
+	pop r16
 
 
 	jmp start							; game is restarted
