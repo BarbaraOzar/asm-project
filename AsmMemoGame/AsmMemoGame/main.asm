@@ -1,6 +1,5 @@
-;
+
 ; AsmMemoGame.asm
-;
 ; Created: 3/16/2018 8:30:36 AM
 
 
@@ -26,7 +25,6 @@
 	ldi r18, 0x01						; value to add, to light sequentially each LED// the resulted value must be complemented for LED to light
 	ldi r24, 0							; value to increment and use it to gerenate randomNo later						
 	ldi r25, 0x0						; for randomGen
-
 load_welcome:	
 	add r17, r18						; r17 = 00 + 01 = 0000_0001  
 	mov r20, r17						; move value to r20
@@ -35,27 +33,22 @@ load_welcome:
 
 	add r18, r18						; r18 = 01 + 01 = 0000_0010 
 	dec r19								; decrement loop counter
-	
 
 	cpi r19, 0x00						; r19 > 0? 
 	brne load_welcome					; if r19-- != 0 , branch to load_welcome
 	
 	rjmp wait_for_input					; check portb for input */
 
-
-	
 	
 start:									; game begins
 										; initial game setup
 .equ seq_counter = 3					; variable to count the number of steps in the sequence, initially set to 3
 .equ seq_value = 1						; setting the value that will go into the sequence (this should be random later on)
 
-.equ sequence = 0x200					; giving an adress for the sequence in RAM (0x200)
+.equ sequence = 0x200					; giving an address for the sequence in RAM (0x200)
 	ldi xh, high(sequence)				; loading the high part of sequence into X pointer
 	ldi xl, low(sequence)				; loading the low part of sequence into X pointer
-
 	ldi r16, seq_counter				; the sequence counter loaded into r16
-		
 
 	; loop to load the initial 3 values in sequence
 	; for (int i = 0; i < seqCounter; i++) {
@@ -72,11 +65,9 @@ seq_loading:
 	cp r17, r16						; compare loop counter with seq counter
 	brlo seq_loading				; jump to seq_loading if loop counter < seq counter
 
-
 	; while the game is on
 	ldi r19, 1						; load an indicator that the game is still on (1 = on, 0 = off)
 nextLevel:
-
 	; play sequence
 	ldi		xh, high(sequence)		; loading the high part of sequence into X pointer
 	ldi		xl, low(sequence)		; loading the low part of sequence into X pointer
@@ -89,7 +80,7 @@ seq_display:
 
 	ldi		r21, 80		
 	push	r21						; push parameter 1 to the stack (parameter = 100)
-	call	delay					; call subroutine delay with parameter 100
+;	call	delay					; call subroutine delay with parameter 100
 	pop		r21
 
 	call	lights_all_off			; switch all lights off
@@ -109,9 +100,46 @@ seq_display:
 
 	; wait for user input
 
-	; compare input with sequence
+	; get user input
+	ldi		xh, high(sequence)		; loading the high part of sequence address into X pointer register
+	ldi		xl, low(sequence)		; loading the low part of sequence address into X pointer register
+	ldi r17, 0						; load the counter for the loop into r17
 
-	; if wrong input => game over, error sequence
+get_input:
+	in r22, pinb					; read input from port b
+	tst r22							; compare if there is any input
+	breq get_input					; if input = 0 get input again
+	
+	; compare input with sequence
+	ld r23, x+						; transfer one part of sequence into r24
+
+; input needs to be readjusted to match the seq
+
+	cp r22, r23						; compare input with sequence
+	brne error						; branch to error if sequences weren't equal
+
+	inc r17							; increment loop counter
+	cp r17, r16						; compare loop counter with seq counter
+	brlo get_input					; branch to get_input if loop counter < seq counter
+
+
+; ERROR sequence
+error:								; lights ON and OFF all LEDs for 4 times to signal ERROR
+	push r16						; use r16 as a counter
+	ldi r16, 4						; load 4 into r16 as a 4-times-loop counter
+load_4_times:	tst r16				; test r16 == 0 ?
+	breq more_times 				; breaks the loop if executed 4 times
+	call	lights_all_off			; light all LEDs off
+	call    lights_all_on			; light all LEDs on
+	dec r16							; decrement for the 4-times-loop
+	rjmp load_4_times				
+more_times:							; if 4-times-loop is executed
+	pop r16							; pop r16 to return to initial value
+	
+	; increment sequence counter
+
+	; add one more to sequence
+
 
 	; increment sequence counter
 
@@ -164,7 +192,7 @@ lights_all_off:
 	pop		r16
 	ret
 		 
-	; turn on all the light
+	; turn on all the lights
 lights_all_on:
 	push	r16				
 	ldi		r16, 0xff			; set all 1 in the r16
@@ -228,4 +256,3 @@ wait_for_input:
 	ror r21								; Shifts all bits in r21 one place to the right. The C Flag is shifted into bit 7 of r21. Bit 0 is shifted into the C Flag.
 	eor r25,r21							; Performs the logical EOR between the contents of register 24 and register 21 and places the result in the destination register 24.
 	out porta, r25						;//Testing purpose
-
