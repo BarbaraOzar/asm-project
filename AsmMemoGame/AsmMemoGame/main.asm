@@ -17,35 +17,17 @@
 	 
 	; configuration of portB for input
 	ldi r16, 0x00						; seting value 0b0000_0000 into register 16
-	out ddrb, r16						; setting all the bits in port a to be an input
+	out ddrb, r16						; setting all the bits in port b to be an input
 
-	;WELCOME SEQUENCE	
-	ldi r19, 8							; loop counter for all 7 LEDs
-	ldi r17, 0x00						; value has to be inverted for LEDs on
-	ldi r18, 0x01						; value to add, to light sequentially each LED// the resulted value must be complemented for LED to light
-	ldi r24, 0							; value to increment and use it to gerenate randomNo later						
-	ldi r25, 0x0						; for randomGen
-load_welcome:	
-	add r17, r18						; r17 = 00 + 01 = 0000_0001  
-	mov r20, r17						; move value to r20
-	com r20								; value is inverted for LED0 to light
-	out porta, r20						; value is outputted to porta
-
-;	ldi		r21, 20		
-;	push	r21							; push parameter 1 to the stack (parameter = 80)
-;	call	delay						; call subroutine delay with parameter 80
-;	pop		r21
-
-	lsl r18								; r18 = 01 + 01 = 0000_0010 
-	dec r19								; decrement loop counter
-
-	cpi r19, 0x00						; r19 > 0? 
-	brne load_welcome					; if r19-- != 0 , branch to load_welcome
 	
-	call wait_for_input					; check portb for input
+
+	
 
 	
 start:									; game begins
+
+	call welcome						; playing the welcome sequence
+	call get_input						; check portb for input
 										; initial game setup
 .equ seq_counter = 3					; variable to count the number of steps in the sequence, initially set to 3
 .equ seq_value = 1						; setting the value that will go into the sequence (this should be random later on)
@@ -110,48 +92,49 @@ seq_display:
 	ldi		xl, low(sequence)		; loading the low part of sequence address into X pointer register
 	ldi r17, 0						; load the counter for the loop into r17
 
-get_input:
-	in r22, pinb					; read input from port b
-	tst r22							; compare if there is any input
-	breq get_input					; if input = 0 get input again
 	
 	; compare input with sequence
-	ld r23, x+						; transfer one part of sequence into r23
+	ld r23, x+						; transfer one part of sequence into r24
 
-	dec r22							; input needs to be adjusted to match the seq
+; input needs to be readjusted to match the seq
+
 	cp r22, r23						; compare input with sequence
 	brne error						; branch to error if sequences weren't equal
 
 	inc r17							; increment loop counter
 	cp r17, r16						; compare loop counter with seq counter
-	brlo get_input					; branch to get_input if loop counter < seq counter
+;	brlo get_input					; branch to get_input if loop counter < seq counter
 
+;WELCOME SEQUENCE	
+welcome:
+	push r17
+	push r18
+	push r19
+	push r20
 
+	ldi r19, 8							; loop counter for all 7 LEDs
+	ldi r18, 0x01						; value to add, to light sequentially each LED// the resulted value must be complemented for LED to light	
+load_welcome:	
+	add r17, r18						; r17 = 00 + 01 = 0000_0001  
+	mov r20, r17						; move value to r20
+	com r20								; value is inverted for LED0 to light
+	out porta, r20						; value is outputted to porta
 
-	; error sequence
-error:
-.equ error_counter = 3
-ldi r24, error_counter			; counter to repeat the error loop 3 times
-
-error_loop:
-
-	call lights_all_on
-	
-	ldi		r21, 100		
-	push	r21						; push parameter 1 to the stack (parameter = 100)
-;	call	delay					; call subroutine delay with parameter 100
+	ldi		r21, 20		
+	push	r21							; push parameter 1 to the stack (parameter = 80)
+;	call	delay						; call subroutine delay with parameter 80
 	pop		r21
 
-	call lights_all_off
+	lsl r18								; r18 = 01 + 01 = 0000_0010 
+	dec r19								; decrement loop counter
 
-	push	r21						; push parameter 1 to the stack (parameter = 100)
-;	call	delay					; call subroutine delay with parameter 100
-	pop		r21
+	brne load_welcome					; if r19-- != 0 , branch to load_welcome
 
-	dec r24							; decrement counter
-	tst r24							; test if r24 = 0
-	brne error_loop					; branch if r24 is != 0
-
+	pop r20
+	pop r19
+	pop r18
+	pop r17
+	ret
 
 ; ERROR sequence
 error:								; lights ON and OFF all LEDs for 4 times to signal ERROR
@@ -169,7 +152,6 @@ more_times:							; if 4-times-loop is executed
 	; increment sequence counter
 
 	; add one more to sequence
-
 
 
 	; increment sequence counter
@@ -268,16 +250,27 @@ shift_end:
 	pop		r16
 	ret
 
+	; get user input
+	; the program stays here until the user enters some input
+	; return:
+	;	the user input
+get_input:
+	push r16
+	push r22
 
+	clr r22
+	clr r16
+loop_wait:
+	inc r16
 
-;Check portB for input
-wait_for_input:
-	sbic pinb, 0						; skip if bit is set
-	rjmp load_generator	
-	inc r25								; it increments only once?!
-	rjmp wait_for_input
-	
+	in r22, pinb					; read input from port b
+	com r22							; inverse the input
+	tst r22							; compare if there is any input
+	breq loop_wait					; if input = 0 get input again
 
+	pop r22
+	pop r16
+	ret
 
 
 ; GENERATE A (pseudo)RANDOM NO
