@@ -108,8 +108,7 @@ get_input:
 	; compare input with sequence
 	ld r23, x+						; transfer one part of sequence into r24
 
-; input needs to be readjusted to match the seq
-
+	dec r22							; input needs to be adjusted to match the seq
 	cp r22, r23						; compare input with sequence
 	brne error						; branch to error if sequences weren't equal
 
