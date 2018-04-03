@@ -121,12 +121,10 @@ get_input:
 	cp r17, r16						; compare loop counter with seq counter
 	brlo get_input					; branch to get_input if loop counter < seq counter
 
-
-
 	; error sequence
 error:
-.equ error_counter = 3
-ldi r24, error_counter			; counter to repeat the error loop 3 times
+push r16			; use r16 as a counter
+ldi r16, 4			; counter to repeat the error loop 4 times
 
 error_loop:
 
@@ -143,9 +141,10 @@ error_loop:
 ;	call	delay					; call subroutine delay with parameter 100
 	pop		r21
 
-	dec r24							; decrement counter
-	tst r24							; test if r24 = 0
-	brne error_loop					; branch if r24 is != 0
+	dec r16							; decrement counter
+	tst r16							; test if r16 = 0
+	brne error_loop					; branch if r16 is != 0
+	pop r16
 
 
 ; ERROR sequence
@@ -161,12 +160,6 @@ load_4_times:	tst r16				; test r16 == 0 ?
 more_times:							; if 4-times-loop is executed
 	pop r16							; pop r16 to return to initial value
 	
-	; increment sequence counter
-
-	; add one more to sequence
-
-
-
 	; increment sequence counter
 
 	; add one more to sequence
