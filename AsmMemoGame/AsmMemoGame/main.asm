@@ -26,15 +26,20 @@
 	
 start:									; game begins
 
-	call welcome						; playing the welcome sequence
-	call get_input						; check portb for input
+	call	welcome					; playing the welcome sequence
+	clr		r1	
+	push	r1
+	call	get_input					; check portb for input
+	pop		r1
+	call	lights_all_off				; switch all lights off 
+
 										; initial game setup
 .equ seq_counter = 3					; variable to count the number of steps in the sequence, initially set to 3
-.equ seq_value = 1						; setting the value that will go into the sequence (this should be random later on)
+.equ seq_value = 4						; setting the value that will go into the sequence (this should be random later on)
 
-.equ sequence = 0x200					; giving an address for the sequence in RAM (0x200)
-	ldi xh, high(sequence)				; loading the high part of sequence into X pointer
-	ldi xl, low(sequence)				; loading the low part of sequence into X pointer
+.equ sequence_start = 0x200					; giving an address for the sequence in RAM (0x200)
+	ldi xh, high(sequence_start)				; loading the high part of sequence into X pointer
+	ldi xl, low(sequence_start)				; loading the low part of sequence into X pointer
 	ldi r16, seq_counter				; the sequence counter loaded into r16
 
 	; loop to load the initial 3 values in sequence
@@ -42,39 +47,26 @@ start:									; game begins
 	;	sequence[i] = ranGen.nextInt(9)
 	;}	
 								
-	ldi r18, seq_value				; load the sequence value into r18
-	ldi r17, 0						; load the counter for the loop into r17	
+	ldi r18, seq_value				; load the sequence value into r18	
 seq_loading:
 	st x+, r18						; store one sequence value into RAM 
 	inc r18							; give new value to the variable value (this should be random later on)
-	inc r17							; increment loop counter
+	dec r16							; increment loop counter
+	brne seq_loading				; jump to seq_loading if loop counter < seq counter
 
-	cp r17, r16						; compare loop counter with seq counter
-	brlo seq_loading				; jump to seq_loading if loop counter < seq counter
-
-	; while the game is on
-	ldi r19, 1						; load an indicator that the game is still on (1 = on, 0 = off)
+	clr r0							; tracker for the level
+	ldi r16, seq_counter
+	add r0, r16						; load the initial sequence counter into the tracker
 nextLevel:
-	; play sequence
-	ldi		xh, high(sequence)		; loading the high part of sequence into X pointer
-	ldi		xl, low(sequence)		; loading the low part of sequence into X pointer
-	ldi		r17, 0					; load the counter for the loop into r17
-seq_display:
-	ld		r20, x+					; transfer one part of sequence into r20
-	push	r20						; load r20 on the stack as a variable to light_on subroutine (which led to light)
-	call	light_on				; call light_on routine with the values stored in the sequence
-	pop		r20						; 
+	
+	push r0							; load the level counter as a parameter
+	call sequence					; display the sequence for the player
+	pop r0
 
-	ldi		r21, 80		
-	push	r21						; push parameter 1 to the stack (parameter = 80)
-	call	delay					; call subroutine delay with parameter 80
-	pop		r21
 
-	call	lights_all_off			; switch all lights off
 
-	inc		r17						; increment loop counter
-	cp		r17, r16				; compare loop counter with seq counter
-	brlo	seq_display				; jump to seq_display if loop counter < seq counter
+
+	inc r0							; increment the level counter
 
 	; while (inputCounter < seqCounter) {
 	;	input = UserInput;
@@ -88,8 +80,8 @@ seq_display:
 	; wait for user input
 
 	; get user input
-	ldi		xh, high(sequence)		; loading the high part of sequence address into X pointer register
-	ldi		xl, low(sequence)		; loading the low part of sequence address into X pointer register
+	ldi		xh, high(sequence_start)		; loading the high part of sequence address into X pointer register
+	ldi		xl, low(sequence_start)		; loading the low part of sequence address into X pointer register
 	ldi r17, 0						; load the counter for the loop into r17
 	ldi r24, 0						; use r24 for random number generation (rng) counter
 
@@ -106,7 +98,7 @@ seq_display:
 	cp r17, r16						; compare loop counter with seq counter
 
 	; error sequence
-error:
+error1:
 push r16			; use r16 as a counter
 ldi r16, 4			; counter to repeat the error loop 4 times
 
@@ -184,6 +176,49 @@ modulo:
 
 
 	jmp start							; game is restarted
+
+
+
+	; play sequence subroutine
+	; param:
+	;	- sequence counter;
+sequence:
+	push	r26
+	push	r27
+	push	r16
+	push	r20
+
+	ldi		xh, high(sequence_start)		; loading the high part of sequence into X pointer
+	ldi		xl, low(sequence_start)		; loading the low part of sequence into X pointer
+
+	in		zh, sph						
+	in		zl, spl						; copy stack pointer value into z pointer
+	adiw	zl, 4+3+1					; increment the z pointer up until parameter 1
+
+	ld		r16, z+						; load counter for loop1 into r16 form parameter
+
+seq_display:
+	ld		r20, x+					; transfer one part of sequence into r20
+	push	r20						; load r20 on the stack as a variable to light_on subroutine (which led to light)
+	call	light_on				; call light_on routine with the values stored in the sequence
+	pop		r20						; 
+
+	ldi		r21, 80		
+	push	r21						; push parameter 1 to the stack (parameter = 80)
+	call	delay					; call subroutine delay with parameter 80
+	pop		r21 
+
+	call	lights_all_off			; switch all lights off 
+
+	dec		r16					; increment loop counter
+	brne	seq_display				; jump to seq_display if loop counter < seq counter
+
+	pop		r20
+	pop		r16
+	pop		r27
+	pop		r26
+	ret
+
 
 	; delay subroutine
 	; parameter:
@@ -282,7 +317,10 @@ get_input:
 	push r16
 	push r22
 
-	clr r22
+	in		zh, sph						
+	in		zl, spl				; copy stack pointer value into z pointer
+	adiw	zl, 2+3+1			; increment the z pointer up until return value
+
 	clr r16
 loop_wait:
 	inc r16
@@ -291,6 +329,7 @@ loop_wait:
 	com r22							; inverse the input
 	tst r22							; compare if there is any input
 	breq loop_wait					; if input = 0 get input again
+	ld z, r22						; set up the input value from the user on the stack
 
 	pop r22
 	pop r16
