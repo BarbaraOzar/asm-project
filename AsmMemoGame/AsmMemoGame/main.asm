@@ -170,10 +170,6 @@ modulo:
 	inc r17							; increment loop counter
 	pop r16
 
-	; increment sequence counter
-
-	; add one more to sequence
-
 
 	jmp start							; game is restarted
 
@@ -324,11 +320,11 @@ get_input:
 	clr r16
 loop_wait:
 	inc r16
-
 	in r22, pinb					; read input from port b
 	com r22							; inverse the input
 	tst r22							; compare if there is any input
 	breq loop_wait					; if input = 0 get input again
+
 	ld z, r22						; set up the input value from the user on the stack
 
 	pop r22
