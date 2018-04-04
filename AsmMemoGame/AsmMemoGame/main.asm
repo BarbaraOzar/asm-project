@@ -4,19 +4,19 @@
 
 	; configurations
 	; configuration of stack
-	ldi r16, high(ramend)				
-	out sph, r16						; loading the high end of stack pointer with 0x21
-	ldi r16, low(ramend)
-	out spl, r16						; loading the low end of stack pointer with 0xff
+	ldi		r16, high(ramend)				
+	out		sph, r16						; loading the high end of stack pointer with 0x21
+	ldi		r16, low(ramend)
+	out		spl, r16						; loading the low end of stack pointer with 0xff
 
 	; configuration of portA for output
-	ldi r16, 0xff						; seting value 0b1111_1111 into register 16
-	out ddra, r16						; setting all the bits in port a to be an output
-	out porta, r16						; turn off all leds
+	ldi		r16, 0xff						; seting value 0b1111_1111 into register 16
+	out		ddra, r16						; setting all the bits in port a to be an output
+	out		porta, r16						; turn off all leds
 	 
 	; configuration of portB for input
-	ldi r16, 0x00						; seting value 0b0000_0000 into register 16
-	out ddrb, r16						; setting all the bits in port b to be an input
+	ldi		r16, 0x00						; seting value 0b0000_0000 into register 16
+	out		ddrb, r16						; setting all the bits in port b to be an input
 
 	
 
@@ -26,134 +26,112 @@
 start:									; game begins
 
 	; initial game setup
-.equ seq_counter = 3					; variable to count the number of steps in the sequence, initially set to 3
+.equ seq_counter = 3					; initial count the number of steps in the sequence
 .equ sequence_start = 0x200				; giving an address for the sequence in RAM (0x200)
 
-	call	welcome						; playing the welcome sequence
+	call	welcome						; playing the welcome sequence subroutine
 
-	clr		r1							; clear r1
-	clr		r2							; clear r2
+	clr		r1							; clear r1 for return value of the user's input
+	clr		r2							; clear r2 for return value of the random bit
 	push	r2							; push r2 onto stack
 	push	r1							; push r1 onto stack
-
 	call	get_input					; wait for user input to start the game
-	pop		r1							; return value - user's input 
+	pop		r1							; return value, user input bit number
 	pop		r2							; return value - random number
 
-	call	lights_all_off				; switch all lights off 
+	call	lights_all_off				; reset the lights before playing the game sequence
 
-	ldi xh, high(sequence_start)		; loading the high part of sequence into X pointer
-	ldi xl, low(sequence_start)			; loading the low part of sequence into X pointer
-	ldi r16, seq_counter				; the sequence counter loaded into r16
-
-	; loop to load the initial 3 values in sequence
-	; for (int i = 0; i < seqCounter; i++) {
-	;	sequence[i] = ranGen.nextInt(9)
-	;}	
-								
+	ldi		xh, high(sequence_start)	; loading the high part of sequence_start into X pointer
+	ldi		xl, low(sequence_start)		; loading the low part of sequence_start into X pointer
+	ldi		r16, seq_counter			; the sequence counter loaded into r16	
+	
+	;loading the initial sequence with the size of seq_counter							
 seq_loading:
-	st x+, r2							; store one sequence value into RAM 
+	st		x+, r2						; store one sequence value into RAM and increase x pointer
 	
-	clr r18
-	push r18
-	push r2
-	call init_seq_gen
-	pop r2
-	pop r18
+	clr		r18							; clear r18 for return value for method initial_sequence_generation
+	push	r18							; push r18 on the stack
+	push	r2							; push the sequence value as a paramether for the method on the stack
+	call	init_seq_gen				; call subroutine to generate random number
+	pop		r2							; pop the parameter
+	pop		r18							; pop the return value (random number) from the stack
 	
-	mov r2, r18
+	mov		r2, r18						; transfer the return value into r2 (next value to be added into the sequence)
+	dec		r16							; decrement loop counter
+	brne	seq_loading					; jump to seq_loading when loop counter reaches 0
 
-	dec r16								; increment loop counter
-	brne seq_loading					; jump to seq_loading if loop counter < seq counter
-
-	clr r0								; tracker for the level
-	ldi r16, seq_counter
-	add r0, r16							; load the initial sequence counter into the tracker
+	clr		r0							; tracker for the levels
+	ldi		r16, seq_counter			; load the value of seq_counter into r16
+	add		r0, r16						; level tracker starts with the initial value of seq_counter
 
 next_level:
-
-	push r0								; load the level counter as a parameter
-	call sequence						; display the sequence for the player
-	pop r0
+	push	r0							; load the levels counter as a parameter
+	call	sequence					; display the sequence for the player
+	pop		r0							; pop the parameter from the stack
 
 	ldi		xh, high(sequence_start)	; loading the high part of sequence address into X pointer register
 	ldi		xl, low(sequence_start)		; loading the low part of sequence address into X pointer register
 
-	mov r17, r0							; copy the lenght of seq into r17
-
+	mov		r17, r0						; copy the lenght of sequence into r17 for loop counter
 com_loop:
-	clr		r1							; clear r1
-	clr		r2							; clear r2
+	clr		r1							; clear r1 for return value of the user's input
+	clr		r2							; clear r2 for return value of the random bit
 	push	r2							; push r2 onto stack
 	push	r1							; push r1 onto stack
 	call	get_input					; wait for user input to start the game
-	pop		r1							; return value - user's input 
+	pop		r1							; return value, user input bit number
 	pop		r2							; return value - random number
 
-	ld r23, x+							; transfer one part of sequence into gpr
+	ld		r23, x+						; transfer one value of the sequence into GPR
 
-	call lights_all_off
+	call	lights_all_off				; reset all lights
 
-	ldi		r21, 10		
-	push	r21							; push parameter 1 to the stack 
+	ldi		r21, 10						; load parameter for delay subroutine
+	push	r21							; push parameter to the stack 
 	call	delay						; call subroutine delay with parameter
-	pop		r21
+	pop		r21							; pop the parameter from the stack
 
-	mov r20, r23
-	push	r20						; load r20 on the stack as a variable to light_on subroutine (which led to light)
-	call	light_on				; call light_on routine with the values stored in the sequence
-	pop		r20						; 
+	mov		r20, r23					; move into r20 the one value from the sequence
+	push	r20							; load r20 on the stack as a variable to light_on subroutine (which led to light)
+	call	light_on					; call light_on routine with the values stored in the sequence
+	pop		r20							; pop the parameter from the stack
 
-	ldi		r21, 30		
-	push	r21							; push parameter 1 to the stack 
+	ldi		r21, 30						; load parameter for delay subroutine
+	push	r21							; push parameter to the stack 
 	call	delay						; call subroutine delay with parameter
-	pop		r21
+	pop		r21							; pop the parameter from the stack
 
-	call lights_all_off
+	call	lights_all_off				; reset all lights
 
-	cp r1, r23							; compare input with sequence
-	brne error_seq						; branch to error if sequences weren't equal
+	cp		 r1, r23					; compare input from the user with one sequence value
+	brne	error_seq					; branch to error if values weren't equal
 
-	dec r17								; decrement loop counter
-	tst r17
-	brne com_loop
+	dec		r17							; decrement loop counter
+	tst		r17							; test if the loop counter have reached 0 (no more values to compare)
+	brne	com_loop					; jump to com_loop if r17 != 0
 
-	inc r0								; increment the level counter
-	mov r19, r2							; move new random number to sequence
-	push r19
-	call inc_seq
-	pop r19
-
-	ldi		r21, 20		
-	push	r21							; push parameter 1 to the stack 
+	inc		r0							; increment the level counter
+	st		x+, r2						; store the next seq value into RAM, random number, coming from get_input subroutine as a return value
+	
+	ldi		r21, 20						; load parameter for delay subroutine
+	push	r21							; push parameter to the stack 
 	call	delay						; call subroutine delay with parameter
-	pop		r21
+	pop		r21							; pop the parameter from the stack
 
-	rjmp next_level
+	rjmp	next_level					; jump to next level
 
 error_seq:
-	call error
+	call	error
+
 	ldi		r21, 20		
 	push	r21							; push parameter 1 to the stack 
 	call	delay						; call subroutine delay with parameter
 	pop		r21
-	call lights_all_off
-	rjmp start
+	call	lights_all_off
+	rjmp	start
 
-; add one more seq number
-inc_seq:
-	push r16
-	in		zh, sph						
-	in		zl, spl						; copy stack pointer value into z pointer
-	adiw	zl, 1+3+1					; increment the z pointer up until parameter 1
-	ld		r16, z+						; load random number into r16 form parameter
 
-	st x+, r16							; store the next seq value into RAM
-	pop r16
-	ret
-; end of add one more seq number	
-	
-; error sequence
+; error sequence subroutine
 error:
 push r16			; use r16 as a counter
 ldi r16, 4			; counter to repeat the error loop 4 times
