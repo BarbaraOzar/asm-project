@@ -344,10 +344,10 @@ loop_wait:
 
 	st z, r22						; set up the input value from the user on the stack
 
+	pop r31
+	pop r30
 	pop r22
 	pop r16
-	pop r30
-	pop r31
 	ret
 
 
