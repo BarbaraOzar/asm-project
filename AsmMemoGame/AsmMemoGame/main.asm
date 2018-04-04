@@ -26,20 +26,25 @@
 	
 start:									; game begins
 
-	call	welcome					; playing the welcome sequence
+	; initial game setup
+.equ seq_counter = 3					; variable to count the number of steps in the sequence, initially set to 3
+.equ sequence_start = 0x200				; giving an address for the sequence in RAM (0x200)
+
+	call	welcome						; playing the welcome sequence
+
 	clr		r1	
 	push	r1
-	call	get_input					; check portb for input
-	pop		r1
+	call	get_input					; wait for user input to start the game
+	pop		r1							; return value, the value the user has entered
+
 	call	lights_all_off				; switch all lights off 
 
-										; initial game setup
-.equ seq_counter = 3					; variable to count the number of steps in the sequence, initially set to 3
+
 .equ seq_value = 4						; setting the value that will go into the sequence (this should be random later on)
 
-.equ sequence_start = 0x200					; giving an address for the sequence in RAM (0x200)
-	ldi xh, high(sequence_start)				; loading the high part of sequence into X pointer
-	ldi xl, low(sequence_start)				; loading the low part of sequence into X pointer
+
+	ldi xh, high(sequence_start)		; loading the high part of sequence into X pointer
+	ldi xl, low(sequence_start)			; loading the low part of sequence into X pointer
 	ldi r16, seq_counter				; the sequence counter loaded into r16
 
 	; loop to load the initial 3 values in sequence
@@ -47,26 +52,26 @@ start:									; game begins
 	;	sequence[i] = ranGen.nextInt(9)
 	;}	
 								
-	ldi r18, seq_value				; load the sequence value into r18	
+	ldi r18, seq_value					; load the sequence value into r18	
 seq_loading:
-	st x+, r18						; store one sequence value into RAM 
-	inc r18							; give new value to the variable value (this should be random later on)
-	dec r16							; increment loop counter
-	brne seq_loading				; jump to seq_loading if loop counter < seq counter
+	st x+, r18							; store one sequence value into RAM 
+	inc r18								; give new value to the variable value (this should be random later on)
+	dec r16								; increment loop counter
+	brne seq_loading					; jump to seq_loading if loop counter < seq counter
 
-	clr r0							; tracker for the level
+	clr r0								; tracker for the level
 	ldi r16, seq_counter
-	add r0, r16						; load the initial sequence counter into the tracker
+	add r0, r16							; load the initial sequence counter into the tracker
 nextLevel:
 	
-	push r0							; load the level counter as a parameter
-	call sequence					; display the sequence for the player
+	push r0								; load the level counter as a parameter
+	call sequence						; display the sequence for the player
 	pop r0
 
 
 
 
-	inc r0							; increment the level counter
+	inc r0								; increment the level counter
 
 	; while (inputCounter < seqCounter) {
 	;	input = UserInput;
