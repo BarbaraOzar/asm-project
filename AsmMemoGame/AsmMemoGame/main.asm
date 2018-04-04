@@ -133,7 +133,7 @@ load_welcome:
 
 	ldi		r21, 20		
 	push	r21							; push parameter 1 to the stack (parameter = 80)
-;	call	delay						; call subroutine delay with parameter 80
+	call	delay						; call subroutine delay with parameter 80
 	pop		r21
 
 	lsl r18								; r18 = 01 + 01 = 0000_0010 
@@ -321,6 +321,8 @@ shift_end:
 get_input:
 	push r16
 	push r22
+	push r30
+	push r31
 
 	in		zh, sph						
 	in		zl, spl				; copy stack pointer value into z pointer
@@ -334,8 +336,10 @@ loop_wait:
 	com r22							; inverse the input
 	tst r22							; compare if there is any input
 	breq loop_wait					; if input = 0 get input again
-	ld z, r22						; set up the input value from the user on the stack
-
+	st z, r22						; set up the input value from the user on the stack
+	
+	pop r31
+	pop r30
 	pop r22
 	pop r16
 	ret
