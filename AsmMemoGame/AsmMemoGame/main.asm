@@ -1,4 +1,3 @@
-
 ; AsmMemoGame.asm
 ; Created: 3/16/2018 8:30:36 AM
 
@@ -62,7 +61,7 @@ seq_loading:
 	ldi r16, seq_counter
 	add r0, r16							; load the initial sequence counter into the tracker
 
-nextLevel:
+next_level:
 	push r0								; load the level counter as a parameter
 	call sequence						; display the sequence for the player
 	pop r0
@@ -70,62 +69,77 @@ nextLevel:
 	ldi		xh, high(sequence_start)	; loading the high part of sequence address into X pointer register
 	ldi		xl, low(sequence_start)		; loading the low part of sequence address into X pointer register
 
-	
+	mov r17, r0							; copy the lenght of seq into r17
+
+com_loop:
 	clr		r1							; clear r1
 	push	r1							; push r1 onto stack
 	call	get_input					; wait for user input to start the game
 	pop		r1							; return value, the value the user has entered
 
+	ld r23, x+							; transfer one part of sequence into gpr
+	cp r1, r23							; compare input with sequence
+	brne error_seq						; branch to error if sequences weren't equal
 
+	dec r17								; decrement loop counter
+	tst r17
+	brne com_loop
 
 	inc r0								; increment the level counter
+	ldi r19, 3
+	push r19
+	call inc_seq
+	pop r19
 
+error_seq:
+	call error
+	ldi		r21, 20		
+	push	r21							; push parameter 1 to the stack 
+	call	delay						; call subroutine delay with parameter
+	pop		r21
+	rjmp start
 
-	; while (inputCounter < seqCounter) {
-	;	input = UserInput;
-	;	if(input != sequence[inputCounter] {
-	;		error sequence;
-	;		jump to start;
-	;	}
-	;	inputCounter++;
-	; }
+; add one more seq number
+inc_seq:
+	push r16
+	in		zh, sph						
+	in		zl, spl						; copy stack pointer value into z pointer
+	adiw	zl, 1+3+1					; increment the z pointer up until parameter 1
+	ld		r16, z+						; load random number into r16 form parameter
 
-	; wait for user input
-
-	; get user input
-	ldi		xh, high(sequence_start)		; loading the high part of sequence address into X pointer register
-	ldi		xl, low(sequence_start)		; loading the low part of sequence address into X pointer register
-	ldi r17, 0						; load the counter for the loop into r17
-	ldi r24, 0						; use r24 for random number generation (rng) counter
-
+	st x+, r16							; store the next seq value into RAM
+	pop r16
+	ret
+; end of add one more seq number	
 	
-	; compare input with sequence
-	ld r23, x+						; transfer one part of sequence into r24
-
-; input needs to be readjusted to match the seq
-
-	cp r22, r23						; compare input with sequence
-	brne error						; branch to error if sequences weren't equal
-
-	inc r17							; increment loop counter
-	cp r17, r16						; compare loop counter with seq counter
-
-
-	; error sequence
-error1:
+; error sequence
+error:
 push r16			; use r16 as a counter
 ldi r16, 4			; counter to repeat the error loop 4 times
 
-;	brlo get_input					; branch to get_input if loop counter < seq counter
-
 error_loop:
-dec r16							; decrement counter
+	call lights_all_off
+
+	ldi		r21, 20		
+	push	r21							; push parameter 1 to the stack (parameter = 80)
+	call	delay						; call subroutine delay with parameter 80
+	pop		r21
+
+	call lights_all_on
+
+	ldi		r21, 20		
+	push	r21							; push parameter 1 to the stack (parameter = 80)
+	call	delay						; call subroutine delay with parameter 80
+	pop		r21
+
+	dec r16							; decrement counter
 	tst r16							; test if r16 = 0
 	brne error_loop					; branch if r16 is != 0
 	pop r16
+	ret
+; end of error seq
 
-
-;WELCOME SEQUENCE	
+; welcome sequence	
 welcome:
 	push r17
 	push r18
@@ -155,20 +169,8 @@ load_welcome:
 	pop r18
 	pop r17
 	ret
+; end of welcome sequence
 
-; ERROR sequence
-error:								; lights ON and OFF all LEDs for 4 times to signal ERROR
-	push r16						; use r16 as a counter
-	ldi r16, 4						; load 4 into r16 as a 4-times-loop counter
-load_4_times:	tst r16				; test r16 == 0 ?
-	breq more_times 				; breaks the loop if executed 4 times
-	call	lights_all_off			; light all LEDs off
-	call    lights_all_on			; light all LEDs on
-	dec r16							; decrement for the 4-times-loop
-	rjmp load_4_times				
-more_times:							; if 4-times-loop is executed
-	pop r16							; pop r16 to return to initial value
-	
 	; add one more to sequence - generation of a new sequence number; increment sequence counter
 
 get_random:
@@ -325,31 +327,72 @@ shift_end:
 	;	the user input
 get_input:
 	push r16
+	push r17
 	push r22
 	push r30
 	push r31
 
 	in		zh, sph						
 	in		zl, spl					; copy stack pointer value into z pointer
-	adiw	zl, 2+3+1				; increment the z pointer up until return value
+	adiw	zl, 5+3+1				; increment the z pointer up until return value
 
 	clr r16							; clear r16 - random counter
 
 loop_wait:
 	inc r16							; increment r16 - random counter
 	in r22, pinb					; read input from port b
-	com r22							; inverse the input
+	com r22						; inverse the input
 	tst r22							; compare if there is any input
 	breq loop_wait					; if input = 0 get input again
-	st z, r22						; set up the input value from the user on the stack
-	
+
+	clr r17
+	push r17
+	push r22
+	call input_status
+	pop r22
+	pop r17
+
+	st z, r17						; set up the input value from the user on the stack
+
 	pop r31
 	pop r30
 	pop r22
+	pop r17
 	pop r16
-
 	ret
 
+; input status
+
+input_status:
+
+	push	r16
+	push	r17
+	push	r30
+	push	r31
+
+	in zh, sph						
+	in zl, spl					; copy stack pointer value into z pointer
+	adiw zl, 4+3+1				; increment the z pointer up until return value
+
+	clr	r17
+	ld r16, z+
+	;com r16
+
+next:
+	lsr	r16
+	tst	r16
+	breq status_end
+	inc	r17
+	rjmp next
+status_end:
+
+	st z, r17
+	pop r31
+	pop r30
+	pop r17
+	pop	r16
+
+	ret
 
 ; GENERATE A (pseudo)RANDOM NO
 	load_generator:	
@@ -358,3 +401,4 @@ loop_wait:
 	ror r21								; Shifts all bits in r21 one place to the right. The C Flag is shifted into bit 7 of r21. Bit 0 is shifted into the C Flag.
 	eor r25,r21							; Performs the logical EOR between the contents of register 24 and register 21 and places the result in the destination register 24.
 	out porta, r25						;//Testing purpose
+
