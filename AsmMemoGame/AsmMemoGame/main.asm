@@ -18,11 +18,7 @@
 	; configuration of portB for input
 	ldi r16, 0x00						; seting value 0b0000_0000 into register 16
 	out ddrb, r16						; setting all the bits in port b to be an input
-
 	
-
-	
-
 	
 start:									; game begins
 
@@ -32,22 +28,25 @@ start:									; game begins
 
 	call	welcome						; playing the welcome sequence
 
-	clr		r1	
-	push	r1
+	clr		r1							; clear r1
+	push	r1							; push r1 onto stack
 	call	get_input					; wait for user input to start the game
 	pop		r1							; return value, the value the user has entered
 
 	call	lights_all_off				; switch all lights off 
-
+	; delay 
+	ldi		r21, 80		
+	push	r21							; push parameter 1 to the stack (parameter = 80)
+	call	delay						; call subroutine delay with parameter 80
+	pop		r21 
 
 .equ seq_value = 4						; setting the value that will go into the sequence (this should be random later on)
-
 
 	ldi xh, high(sequence_start)		; loading the high part of sequence into X pointer
 	ldi xl, low(sequence_start)			; loading the low part of sequence into X pointer
 	ldi r16, seq_counter				; the sequence counter loaded into r16
 
-	; loop to load the initial 3 values in sequence
+	; loop to load the initial values in sequence
 	; for (int i = 0; i < seqCounter; i++) {
 	;	sequence[i] = ranGen.nextInt(9)
 	;}	
@@ -62,16 +61,25 @@ seq_loading:
 	clr r0								; tracker for the level
 	ldi r16, seq_counter
 	add r0, r16							; load the initial sequence counter into the tracker
+
 nextLevel:
-	
 	push r0								; load the level counter as a parameter
 	call sequence						; display the sequence for the player
 	pop r0
 
+	ldi		xh, high(sequence_start)	; loading the high part of sequence address into X pointer register
+	ldi		xl, low(sequence_start)		; loading the low part of sequence address into X pointer register
+
+	
+	clr		r1							; clear r1
+	push	r1							; push r1 onto stack
+	call	get_input					; wait for user input to start the game
+	pop		r1							; return value, the value the user has entered
 
 
 
 	inc r0								; increment the level counter
+
 
 	; while (inputCounter < seqCounter) {
 	;	input = UserInput;
@@ -101,6 +109,7 @@ nextLevel:
 
 	inc r17							; increment loop counter
 	cp r17, r16						; compare loop counter with seq counter
+
 
 	; error sequence
 error1:
@@ -174,10 +183,6 @@ modulo:
 	st x+, r24						; store new sequence value into RAM 
 	inc r17							; increment loop counter
 	pop r16
-
-	; increment sequence counter
-
-	; add one more to sequence
 
 
 	jmp start							; game is restarted
@@ -321,23 +326,28 @@ shift_end:
 get_input:
 	push r16
 	push r22
+	push r30
+	push r31
 
 	in		zh, sph						
-	in		zl, spl				; copy stack pointer value into z pointer
-	adiw	zl, 2+3+1			; increment the z pointer up until return value
+	in		zl, spl					; copy stack pointer value into z pointer
+	adiw	zl, 2+3+1				; increment the z pointer up until return value
 
-	clr r16
+	clr r16							; clear r16 - random counter
+
 loop_wait:
-	inc r16
-
+	inc r16							; increment r16 - random counter
 	in r22, pinb					; read input from port b
 	com r22							; inverse the input
 	tst r22							; compare if there is any input
 	breq loop_wait					; if input = 0 get input again
-	ld z, r22						; set up the input value from the user on the stack
+
+	st z, r22						; set up the input value from the user on the stack
 
 	pop r22
 	pop r16
+	pop r30
+	pop r31
 	ret
 
 
